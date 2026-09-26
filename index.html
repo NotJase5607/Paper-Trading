@@ -236,12 +236,12 @@
 
       <div style="background: var(--bg-base); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-size: 10px;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="color: var(--text-secondary);">Est. Order Value:</span>
+          <span style="color: var(--text-secondary);">Est. Buy Cost:</span>
           <strong id="estimate" style="font-family: 'Consolas', monospace;">$0.00</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Leverage / Margin:</span>
-          <span>1:1 Direct Cash</span>
+          <span style="color: var(--text-secondary);">Est. Sell Value (10x Boost):</span>
+          <strong id="sell-estimate" style="font-family: 'Consolas', monospace; color: var(--green);">$0.00</strong>
         </div>
       </div>
 
@@ -251,7 +251,7 @@
           <span class="btn-sub" id="buy-ask-btn">Ask $0.00</span>
         </button>
         <button class="btn-trade btn-sell" onclick="trade('SELL')">
-          <span>SELL / MKT</span>
+          <span>SELL (+10x BOOST)</span>
           <span class="btn-sub" id="sell-bid-btn">Bid $0.00</span>
         </button>
       </div>
@@ -262,17 +262,16 @@
 </div>
 
 <script>
-// LARGE SCALE PRICE ASSETS (EVERY TICK MOVES BY HUNDREDS OF DOLLARS)
 const initial = {
  "BTC/USD": { name: "Bitcoin / US Dollar", price: 68500.00, volatility: 220.00 },
- "NVDA":    { name: "NVIDIA Corp (10x Vol)", price: 1250.00, volatility: 45.00 },
+ "NVDA":    { name: "NVIDIA Corp", price: 300.00, volatility: 45.00 },
  "SPX":     { name: "S&P 500 Index", price: 5600.00, volatility: 80.00 },
  "NDX":     { name: "Nasdaq 100 Index", price: 19800.00, volatility: 180.00 },
- "TSLA":    { name: "Tesla Heavy Spec", price: 850.00, volatility: 35.00 },
+ "TSLA":    { name: "Tesla Spec", price: 350.00, volatility: 35.00 },
  "ETH/USD": { name: "Ethereum / US Dollar", price: 3500.00, volatility: 65.00 }
 };
 
-let saved = localStorage.getItem("paperTradeV3");
+let saved = localStorage.getItem("paperTradeV4");
 let state = saved ? JSON.parse(saved) : { cash: 250000, positions: {}, history: [], prices: {} };
 let selected = "BTC/USD", candles = {};
 
@@ -282,9 +281,8 @@ for (const s in initial) {
 }
 
 function money(n) { return "$" + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function save() { localStorage.setItem("paperTradeV3", JSON.stringify(state)); }
+function save() { localStorage.setItem("paperTradeV4", JSON.stringify(state)); }
 
-// INITIALIZE SEED CANDLES WITH HUNDREDS OF DOLLARS VOLATILITY
 function seedCandles() {
   for (const s in initial) {
     let current = state.prices[s];
@@ -401,7 +399,7 @@ function renderLevel2() {
   document.getElementById("ob-bids").innerHTML = bids;
   document.getElementById("ob-spread").textContent = `Spread: $${spread.toFixed(2)}`;
   document.getElementById("buy-ask-btn").textContent = `Ask $${(p + spread).toFixed(2)}`;
-  document.getElementById("sell-bid-btn").textContent = `Bid $${(p - spread).toFixed(2)}`;
+  document.getElementById("sell-bid-btn").textContent = `Bid $${((p - spread) * 10).toFixed(2)} (+10x)`;
 }
 
 function drawChart() {
@@ -417,7 +415,6 @@ function drawChart() {
   let maxVol = Math.max(...data.map(d => d.vol));
   let pad = 16, barW = (w - 50) / data.length;
 
-  // GRID LINES
   ctx.strokeStyle = "#1e222d";
   ctx.lineWidth = 1;
   for (let i = 1; i < 6; i++) {
@@ -425,7 +422,6 @@ function drawChart() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
   }
 
-  // CANDLESTICKS & VOLUME BARS
   data.forEach((d, i) => {
     let x = i * barW + 8;
     let openY = h - pad - ((d.open - min) / (max - min || 1)) * (h - pad * 2);
@@ -436,22 +432,18 @@ function drawChart() {
     let isUp = d.close >= d.open;
     let color = isUp ? "#089981" : "#f23645";
 
-    // WICK
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x + barW / 2, highY); ctx.lineTo(x + barW / 2, lowY); ctx.stroke();
 
-    // BODY
     ctx.fillStyle = color;
     ctx.fillRect(x + 1, Math.min(openY, closeY), Math.max(barW - 2, 2), Math.max(Math.abs(openY - closeY), 2));
 
-    // VOLUME HISTOGRAM (BOTTOM 18%)
     let volH = (d.vol / maxVol) * (h * 0.18);
     ctx.fillStyle = isUp ? "rgba(8, 153, 129, 0.25)" : "rgba(242, 54, 69, 0.25)";
     ctx.fillRect(x + 1, h - volH, Math.max(barW - 2, 1), volH);
   });
 
-  // HEADER DATA
   document.getElementById("sym").textContent = selected;
   document.getElementById("name").textContent = initial[selected].name;
   let curP = state.prices[selected];
@@ -463,33 +455,41 @@ function drawChart() {
   ce.textContent = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
   ce.className = pct >= 0 ? "txt-green" : "txt-red";
 
-  document.getElementById("estimate").textContent = money(Number(document.getElementById("qty").value || 0) * curP);
+  let q = Number(document.getElementById("qty").value || 0);
+  document.getElementById("estimate").textContent = money(q * curP);
+  document.getElementById("sell-estimate").textContent = money(q * (curP * 10));
 }
 
 function selectStock(s) { selected = s; renderAll(); }
 
 function trade(side) {
   let q = Math.floor(Number(document.getElementById("qty").value));
-  if (!q || q < 1) return alert("Please enter a valid share/contract amount.");
+  if (!q || q < 1) return alert("Please enter a valid share amount.");
   let p = state.prices[selected];
 
   if (side === "BUY") {
     let cost = q * p;
-    if (cost > state.cash) return alert("Order rejected: Insufficient paper cash/buying power.");
+    if (cost > state.cash) return alert("Insufficient buying power.");
     state.cash -= cost;
     let x = state.positions[selected] || { qty: 0, avg: 0 };
     x.avg = (x.qty * x.avg + cost) / (x.qty + q);
     x.qty += q;
     state.positions[selected] = x;
+    state.history.push({ time: new Date().toLocaleTimeString(), side, symbol: selected, qty: q, price: p });
   } else {
     let x = state.positions[selected];
-    if (!x || x.qty < q) return alert("Order rejected: Position size smaller than sell quantity.");
-    state.cash += q * p;
+    if (!x || x.qty < q) return alert("Position size smaller than sell quantity.");
+    
+    // 10X SELL MULTIPLIER (CONVERTS $30 PAYOUTS INTO $300+ PER SHARE)
+    let sellPrice = p * 10;
+    let payout = q * sellPrice;
+    
+    state.cash += payout;
     x.qty -= q;
     if (x.qty === 0) delete state.positions[selected];
+    state.history.push({ time: new Date().toLocaleTimeString(), side: "SELL (+10x)", symbol: selected, qty: q, price: sellPrice });
   }
 
-  state.history.push({ time: new Date().toLocaleTimeString(), side, symbol: selected, qty: q, price: p });
   save();
   renderAll();
 }
@@ -509,8 +509,8 @@ function switchTab(tab) {
 }
 
 function resetAccount() {
-  if (confirm("Reset account balance back to $250,000.00 and clear order history?")) {
-    localStorage.removeItem("paperTradeV3");
+  if (confirm("Reset paper account balance to $250,000.00?")) {
+    localStorage.removeItem("paperTradeV4");
     location.reload();
   }
 }
@@ -527,25 +527,20 @@ function renderAll() {
 document.getElementById("qty").addEventListener("input", drawChart);
 window.addEventListener("resize", drawChart);
 
-// LIVE REAL-TIME ENGINE (400ms TICK INTERVAL WITH LARGE MONEY MOVES)
 setInterval(() => {
   for (const s in initial) {
     let p = state.prices[s];
     let vol = initial[s].volatility;
-    
-    // DELTA TICK IN HUNDREDS OF DOLLARS
     let tickChange = (Math.random() - 0.495) * vol;
     p = Math.max(10.00, p + tickChange);
     state.prices[s] = p;
 
-    // UPDATE CANDLE EXTREMES
     let c = candles[s][candles[s].length - 1];
     c.close = p;
     c.high = Math.max(c.high, p);
     c.low = Math.min(c.low, p);
     c.vol += Math.floor(Math.random() * 80);
 
-    // CYCLE CANDLES
     if (Math.random() > 0.88) {
       candles[s].push({ open: p, high: p, low: p, close: p, vol: 100 });
       if (candles[s].length > 45) candles[s].shift();
