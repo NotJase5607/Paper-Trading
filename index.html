@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TJR Institutional Terminal | Paper Trading & Live Desk</title>
+<title>Paper Trading Terminal | Live Market Desk</title>
 <style>
   :root {
     --bg-base: #06080c;
@@ -39,7 +39,7 @@
   header { height: 42px; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 13px; letter-spacing: 1px; }
   .brand-logo { width: 18px; height: 18px; background: var(--accent); border-radius: 3px; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 11px; }
-  .tjr-tag { background: rgba(41, 98, 255, 0.15); color: var(--accent); border: 1px solid rgba(41, 98, 255, 0.4); font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; letter-spacing: 0.5px; }
+  .mode-tag { background: rgba(41, 98, 255, 0.15); color: var(--accent); border: 1px solid rgba(41, 98, 255, 0.4); font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; letter-spacing: 0.5px; }
 
   .user-badge { display: flex; align-items: center; gap: 8px; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 700; }
   .user-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); }
@@ -76,7 +76,7 @@
 
   .table-container { overflow-y: auto; flex: 1; background: var(--bg-surface); }
   table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
-  th { background: var(--bg-surface); color: var(--text-secondary); padding: 8px 10px; font-weight: 700; border-bottom: 1px solid var(--border); sticky; top: 0; text-transform: uppercase; }
+  th { background: var(--bg-surface); color: var(--text-secondary); padding: 8px 10px; font-weight: 700; border-bottom: 1px solid var(--border); position: sticky; top: 0; text-transform: uppercase; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: 'Consolas', monospace; }
   tr:hover { background: var(--bg-card); }
 
@@ -124,18 +124,18 @@
 <!-- LOGIN MODAL -->
 <div class="auth-overlay" id="auth-modal">
   <div class="auth-card">
-    <div class="auth-title">TJR Live Trading Desk</div>
-    <div class="auth-sub">Enter a trader username to load your profile & session balance</div>
-    <input type="text" id="username-input" class="auth-input" placeholder="Username (e.g. TraderTJR)..." maxlength="15">
-    <button class="auth-btn" onclick="login()">Enter Desk</button>
+    <div class="auth-title">Paper Trading Terminal</div>
+    <div class="auth-sub">Enter a username to access your session & saved balance</div>
+    <input type="text" id="username-input" class="auth-input" placeholder="Username (e.g. ProTrader)..." maxlength="15">
+    <button class="auth-btn" onclick="login()">Enter Terminal</button>
   </div>
 </div>
 
 <header>
   <div class="brand">
-    <div class="brand-logo">T</div>
-    <span>TJR INSTITUTIONAL</span>
-    <span class="tjr-tag">DESK v4.2</span>
+    <div class="brand-logo">P</div>
+    <span>PAPER TRADING</span>
+    <span class="mode-tag">DESK v4.2</span>
   </div>
 
   <div class="user-badge">
@@ -246,7 +246,7 @@
 
   <!-- ORDER ENTRY TERMINAL -->
   <div class="panel">
-    <div class="panel-head">TJR Execution Desk</div>
+    <div class="panel-head">Order Execution Desk</div>
     <div class="order-entry">
       <div class="input-group">
         <label>Contract / Share Lot Size</label>
@@ -291,9 +291,9 @@ const initialMarkets = {
 };
 
 let currentUser = "";
-let state = { cash: 250000, positions: {}, history: {}, prices: {} };
+let state = { cash: 250000, positions: {}, history: [], prices: {} };
 let selected = "BTC/USD", candles = {};
-let chatChannel = new BroadcastChannel('tjr_global_chat');
+let chatChannel = new BroadcastChannel('paper_global_chat');
 
 function money(n) { return "$" + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -313,7 +313,7 @@ function logout() {
 }
 
 function loadUserData() {
-  let saved = localStorage.getItem("tjr_user_" + currentUser);
+  let saved = localStorage.getItem("pt_user_" + currentUser);
   if (saved) {
     state = JSON.parse(saved);
   } else {
@@ -330,7 +330,7 @@ function loadUserData() {
 
 function saveUserData() {
   if (currentUser) {
-    localStorage.setItem("tjr_user_" + currentUser, JSON.stringify(state));
+    localStorage.setItem("pt_user_" + currentUser, JSON.stringify(state));
   }
 }
 
@@ -351,7 +351,7 @@ function seedCandles() {
   }
 }
 
-// GLOBAL CHAT SYSTEM
+// GLOBAL CHAT SYSTEM (BroadcastChannel + LocalStorage listener for cross-tab sync)
 function sendChat() {
   let input = document.getElementById("chat-input");
   let text = input.value.trim();
@@ -373,6 +373,13 @@ chatChannel.onmessage = (event) => {
   renderChatMessage(event.data);
 };
 
+// Sync across tabs/windows using storage event listener
+window.addEventListener('storage', (event) => {
+  if (event.key === 'paper_global_chat_history') {
+    loadChatHistory();
+  }
+});
+
 function renderChatMessage(msg) {
   let container = document.getElementById("chat-messages");
   let div = document.createElement("div");
@@ -389,21 +396,15 @@ function renderChatMessage(msg) {
 }
 
 function saveChatMessage(msg) {
-  let chats = JSON.parse(localStorage.getItem("tjr_global_chat_history") || "[]");
+  let chats = JSON.parse(localStorage.getItem("paper_global_chat_history") || "[]");
   chats.push(msg);
   if (chats.length > 50) chats.shift();
-  localStorage.setItem("tjr_global_chat_history", JSON.stringify(chats));
+  localStorage.setItem("paper_global_chat_history", JSON.stringify(chats));
 }
 
 function loadChatHistory() {
-  let chats = JSON.parse(localStorage.getItem("tjr_global_chat_history") || "[]");
+  let chats = JSON.parse(localStorage.getItem("paper_global_chat_history") || "[]");
   document.getElementById("chat-messages").innerHTML = "";
-  if(chats.length === 0) {
-    chats = [
-      { user: "TJR_Desk", text: "Welcome to the institutional trading floor.", time: "10:00 AM" },
-      { user: "TradeMaster99", text: "BTC breaking higher here!", time: "10:01 AM" }
-    ];
-  }
   chats.forEach(renderChatMessage);
 }
 
