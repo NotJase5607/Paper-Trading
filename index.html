@@ -3,103 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingView Pro Terminal — Paper Trading</title>
+<title>TJR Institutional Terminal | Paper Trading & Live Desk</title>
 <style>
   :root {
-    --bg-base: #0c0d10;
-    --bg-surface: #131722;
-    --bg-card: #1e222d;
-    --bg-hover: #2a2e39;
-    --border: #2a2e39;
-    --text-primary: #d1d4dc;
+    --bg-base: #06080c;
+    --bg-surface: #0b0e14;
+    --bg-card: #131722;
+    --bg-hover: #1e222d;
+    --border: #1e222d;
+    --text-primary: #e0e3eb;
     --text-secondary: #787b86;
-    --green: #089981;
-    --green-hover: #067a67;
-    --red: #f23645;
-    --red-hover: #cc2e3b;
     --accent: #2962ff;
+    --accent-glow: rgba(41, 98, 255, 0.2);
+    --green: #089981;
+    --green-glow: rgba(8, 153, 129, 0.2);
+    --red: #f23645;
+    --red-glow: rgba(242, 54, 69, 0.2);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 11px; height: 100vh; overflow: hidden; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 11px; height: 100vh; overflow: hidden; }
   button, input, select { font: inherit; color: inherit; }
 
-  /* TOP DESKTOP HEADER */
-  header { height: 38px; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; }
-  .brand-icon { color: var(--accent); font-size: 16px; }
-  .sim-tag { background: rgba(255, 170, 0, 0.12); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.3); font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
-  
-  .top-stats { display: flex; gap: 24px; align-items: center; }
+  /* AUTH MODAL */
+  .auth-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .auth-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; width: 340px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; }
+  .auth-title { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff; text-align: center; }
+  .auth-sub { font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: -10px; }
+  .auth-input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 10px; color: #fff; font-size: 12px; outline: none; }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-btn { background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+  .auth-btn:hover { opacity: 0.9; }
+
+  /* HEADER */
+  header { height: 42px; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 13px; letter-spacing: 1px; }
+  .brand-logo { width: 18px; height: 18px; background: var(--accent); border-radius: 3px; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 11px; }
+  .tjr-tag { background: rgba(41, 98, 255, 0.15); color: var(--accent); border: 1px solid rgba(41, 98, 255, 0.4); font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; letter-spacing: 0.5px; }
+
+  .user-badge { display: flex; align-items: center; gap: 8px; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 700; }
+  .user-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); }
+
+  .top-stats { display: flex; gap: 20px; align-items: center; }
   .stat-box { display: flex; flex-direction: column; align-items: flex-end; }
-  .stat-label { font-size: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-  .stat-val { font-size: 12px; font-weight: 700; font-family: 'Consolas', 'Courier New', monospace; }
-  
+  .stat-label { font-size: 8px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  .stat-val { font-size: 12px; font-weight: 700; font-family: 'Consolas', monospace; }
+
+  /* WORKSPACE LAYOUT */
+  .workspace { display: grid; grid-template-columns: 200px 1fr 280px 240px; height: calc(100vh - 42px); }
+
+  .panel { background: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-head { height: 32px; background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 0 10px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
+
+  /* WATCHLIST */
+  .watchlist-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.15s; }
+  .watchlist-item:hover, .watchlist-item.active { background: var(--bg-card); }
+  .sym-code { font-weight: 800; color: #fff; font-size: 12px; }
+  .sym-name { font-size: 9px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* MAIN SECTION */
+  .main-section { display: grid; grid-template-rows: 1fr 180px; border-right: 1px solid var(--border); }
+  .chart-header { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); }
+  .chart-symbol { font-size: 18px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .chart-price-big { font-size: 20px; font-family: 'Consolas', monospace; font-weight: 800; }
+
+  canvas { width: 100%; height: 100%; display: block; background: var(--bg-base); }
+
+  /* DOCK TABS */
+  .tabs { display: flex; background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 16px; font-weight: 700; font-size: 10px; text-transform: uppercase; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-card); }
+
+  .table-container { overflow-y: auto; flex: 1; background: var(--bg-surface); }
+  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
+  th { background: var(--bg-surface); color: var(--text-secondary); padding: 8px 10px; font-weight: 700; border-bottom: 1px solid var(--border); sticky; top: 0; text-transform: uppercase; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: 'Consolas', monospace; }
+  tr:hover { background: var(--bg-card); }
+
+  /* CHAT PANEL */
+  .chat-box { display: flex; flex-direction: column; height: 100%; background: var(--bg-surface); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .msg-item { background: var(--bg-card); border: 1px solid var(--border); padding: 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }
+  .msg-header { display: flex; justify-content: space-between; align-items: center; }
+  .msg-user { font-weight: 800; color: var(--accent); font-size: 10px; }
+  .msg-time { font-size: 8px; color: var(--text-secondary); }
+  .msg-body { font-size: 11px; color: var(--text-primary); word-break: break-word; margin-top: 2px; }
+  .chat-input-area { padding: 8px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  .chat-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 11px; outline: none; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send-btn { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+
+  /* ORDER ENTRY */
+  .order-entry { padding: 12px; display: flex; flex-direction: column; gap: 12px; height: 100%; }
+  .input-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-group label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }
+  .input-group input, .input-group select { background: var(--bg-base); border: 1px solid var(--border); border-radius: 4px; padding: 8px; color: #fff; font-weight: 700; font-family: 'Consolas', monospace; }
+  .input-group input:focus { border-color: var(--accent); outline: none; }
+
+  .execution-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .btn-trade { border: none; padding: 12px; border-radius: 4px; font-weight: 900; cursor: pointer; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .btn-buy { background: var(--green); color: #fff; box-shadow: 0 0 12px var(--green-glow); }
+  .btn-buy:hover { opacity: 0.9; }
+  .btn-sell { background: var(--red); color: #fff; box-shadow: 0 0 12px var(--red-glow); }
+  .btn-sell:hover { opacity: 0.9; }
+  .btn-sub { font-size: 8px; font-weight: 400; opacity: 0.85; font-family: 'Consolas', monospace; }
+
+  .reset-btn { margin-top: auto; background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 8px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+  .reset-btn:hover { background: var(--bg-card); color: #fff; }
+
   .txt-green { color: var(--green); }
   .txt-red { color: var(--red); }
 
-  /* TERMINAL LAYOUT GRID */
-  .workspace { display: grid; grid-template-columns: 220px 1fr 260px 240px; height: calc(100vh - 38px); }
-
-  /* PANELS */
-  .panel { background: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-  .panel-head { height: 28px; background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 0 10px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
-
-  /* WATCHLIST */
-  .watchlist-item { display: flex; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .watchlist-item:hover, .watchlist-item.active { background: var(--bg-card); }
-  .sym-code { font-weight: 700; color: #fff; display: block; font-size: 12px; }
-  .sym-name { font-size: 9px; color: var(--text-secondary); }
-
-  /* CENTER MAIN CHART AREA */
-  .main-section { display: grid; grid-template-rows: 1fr 180px; border-right: 1px solid var(--border); }
-  .chart-header { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); }
-  .chart-symbol { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-  .chart-price-big { font-size: 18px; font-family: 'Consolas', 'Courier New', monospace; font-weight: 800; }
-  
-  canvas { width: 100%; height: 100%; display: block; background: var(--bg-base); }
-
-  /* POSITIONS & ORDERS TABLE */
-  .tabs { display: flex; background: var(--bg-surface); border-bottom: 1px solid var(--border); }
-  .tab { padding: 6px 14px; font-weight: 700; font-size: 10px; text-transform: uppercase; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-card); }
-  
-  .table-container { overflow-y: auto; flex: 1; background: var(--bg-surface); }
-  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 10px; }
-  th { background: var(--bg-surface); color: var(--text-secondary); padding: 6px 10px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; text-transform: uppercase; }
-  td { padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: 'Consolas', 'Courier New', monospace; }
-  tr:hover { background: var(--bg-card); }
-
-  /* LEVEL II ORDER BOOK */
-  .order-book { display: flex; flex-direction: column; height: 100%; font-family: 'Consolas', 'Courier New', monospace; font-size: 10px; }
-  .ob-row { display: flex; justify-content: space-between; padding: 2px 10px; position: relative; }
-  .ob-bg { position: absolute; top: 0; right: 0; bottom: 0; opacity: 0.15; pointer-events: none; }
-  .ob-asks .ob-bg { background: var(--red); }
-  .ob-bids .ob-bg { background: var(--green); }
-  .ob-spread { text-align: center; padding: 4px 0; font-weight: 700; background: var(--bg-card); border-y: 1px solid var(--border); color: var(--text-secondary); font-size: 9px; text-transform: uppercase; }
-
-  /* ORDER ENTRY SIDEBAR */
-  .order-entry { padding: 10px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
-  .order-type-toggle { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg-base); border-radius: 3px; padding: 2px; }
-  .type-btn { padding: 5px; text-align: center; border-radius: 2px; cursor: pointer; font-weight: 700; color: var(--text-secondary); }
-  .type-btn.active { background: var(--bg-card); color: #fff; }
-
-  .input-group { display: flex; flex-direction: column; gap: 3px; }
-  .input-group label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }
-  .input-group input, .input-group select { background: var(--bg-base); border: 1px solid var(--border); border-radius: 3px; padding: 6px; color: #fff; font-weight: 600; font-family: 'Consolas', 'Courier New', monospace; }
-  .input-group input:focus { border-color: var(--accent); outline: none; }
-
-  .execution-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
-  .btn-trade { border: none; padding: 10px; border-radius: 3px; font-weight: 800; cursor: pointer; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .btn-buy { background: var(--green); color: #fff; }
-  .btn-buy:hover { background: var(--green-hover); }
-  .btn-sell { background: var(--red); color: #fff; }
-  .btn-sell:hover { background: var(--red-hover); }
-  .btn-sub { font-size: 8px; font-weight: 400; opacity: 0.85; font-family: 'Consolas', 'Courier New', monospace; }
-
-  .reset-btn { margin-top: auto; background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 8px; border-radius: 3px; font-weight: 600; cursor: pointer; }
-  .reset-btn:hover { background: var(--bg-card); color: #fff; }
-  
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg-base); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -107,12 +121,29 @@
 </head>
 <body>
 
+<!-- LOGIN MODAL -->
+<div class="auth-overlay" id="auth-modal">
+  <div class="auth-card">
+    <div class="auth-title">TJR Live Trading Desk</div>
+    <div class="auth-sub">Enter a trader username to load your profile & session balance</div>
+    <input type="text" id="username-input" class="auth-input" placeholder="Username (e.g. TraderTJR)..." maxlength="15">
+    <button class="auth-btn" onclick="login()">Enter Desk</button>
+  </div>
+</div>
+
 <header>
   <div class="brand">
-    <span class="brand-icon">◆</span>
-    <span>TRADINGVIEW PRO</span>
-    <span class="sim-tag">PAPER TRADING ENGINE</span>
+    <div class="brand-logo">T</div>
+    <span>TJR INSTITUTIONAL</span>
+    <span class="tjr-tag">DESK v4.2</span>
   </div>
+
+  <div class="user-badge">
+    <div class="user-dot"></div>
+    <span id="display-user">Guest_Trader</span>
+    <button onclick="logout()" style="background:none; border:none; color:var(--text-secondary); font-size:9px; cursor:pointer; text-decoration:underline; margin-left:4px;">Switch</button>
+  </div>
+
   <div class="top-stats">
     <div class="stat-box">
       <span class="stat-label">Net Liquidity</span>
@@ -121,10 +152,6 @@
     <div class="stat-box">
       <span class="stat-label">Buying Power</span>
       <span class="stat-val" id="cash">$250,000.00</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-label">Realized P&L</span>
-      <span class="stat-val txt-green" id="pnl">+$0.00</span>
     </div>
     <div class="stat-box">
       <span class="stat-label">Unrealized P&L</span>
@@ -137,8 +164,8 @@
   <!-- WATCHLIST -->
   <div class="panel">
     <div class="panel-head">
-      <span>Watchlist</span>
-      <span style="font-size: 8px; color: var(--green);">● LIVE 100ms</span>
+      <span>Markets</span>
+      <span style="font-size: 8px; color: var(--green);">● LIVE</span>
     </div>
     <div id="stocks" style="overflow-y: auto; flex: 1;"></div>
   </div>
@@ -166,8 +193,8 @@
     <!-- TABBED BOTTOM DOCK -->
     <div style="display: flex; flex-direction: column; background: var(--bg-surface); border-top: 1px solid var(--border);">
       <div class="tabs">
-        <div class="tab active" onclick="switchTab('positions')">Active Positions</div>
-        <div class="tab" onclick="switchTab('history')">Order Executions</div>
+        <div class="tab active" onclick="switchTab('positions')">Open Positions</div>
+        <div class="tab" onclick="switchTab('history')">Execution Log</div>
       </div>
       <div class="table-container" id="tab-positions">
         <table>
@@ -193,7 +220,7 @@
               <th>Symbol</th>
               <th>Shares</th>
               <th>Fill Price</th>
-              <th>Total Cost</th>
+              <th>Total Value</th>
             </tr>
           </thead>
           <tbody id="history"></tbody>
@@ -202,45 +229,37 @@
     </div>
   </div>
 
-  <!-- LEVEL II ORDER BOOK -->
+  <!-- LIVE GLOBAL CHAT -->
   <div class="panel">
-    <div class="panel-head">Level II Depth</div>
-    <div class="order-book">
-      <div style="padding: 4px 10px; display: flex; justify-content: space-between; color: var(--text-secondary); font-weight: 600;">
-        <span>Price</span><span>Size (Lots)</span>
+    <div class="panel-head">
+      <span>Global Floor Chat</span>
+      <span style="font-size: 8px; color: var(--accent);">BROADCAST LIVE</span>
+    </div>
+    <div class="chat-box">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Type chat message..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button class="chat-send-btn" onclick="sendChat()">Send</button>
       </div>
-      <div class="ob-asks" id="ob-asks" style="display: flex; flex-direction: column-reverse; flex: 1; justify-content: flex-start;"></div>
-      <div class="ob-spread" id="ob-spread">Spread: $150.00</div>
-      <div class="ob-bids" id="ob-bids" style="flex: 1;"></div>
     </div>
   </div>
 
   <!-- ORDER ENTRY TERMINAL -->
   <div class="panel">
-    <div class="panel-head">Order Execution</div>
+    <div class="panel-head">TJR Execution Desk</div>
     <div class="order-entry">
-      <div class="order-type-toggle">
-        <div class="type-btn active">Market</div>
-        <div class="type-btn" style="opacity:0.4; cursor:not-allowed;">Limit</div>
-      </div>
-
       <div class="input-group">
-        <label>Share / Contract Quantity</label>
+        <label>Contract / Share Lot Size</label>
         <input type="number" id="qty" min="1" value="10">
       </div>
 
-      <div class="input-group">
-        <label>Time In Force</label>
-        <select><option>DAY (Day Order)</option><option>GTC (Good 'Til Canceled)</option></select>
-      </div>
-
-      <div style="background: var(--bg-base); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-size: 10px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <div style="background: var(--bg-base); border: 1px solid var(--border); padding: 10px; border-radius: 4px; font-size: 10px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
           <span style="color: var(--text-secondary);">Est. Buy Cost:</span>
           <strong id="estimate" style="font-family: 'Consolas', monospace;">$0.00</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Est. Sell Value (10x Boost):</span>
+          <span style="color: var(--text-secondary);">Est. Sell Boost Payout:</span>
           <strong id="sell-estimate" style="font-family: 'Consolas', monospace; color: var(--green);">$0.00</strong>
         </div>
       </div>
@@ -251,18 +270,18 @@
           <span class="btn-sub" id="buy-ask-btn">Ask $0.00</span>
         </button>
         <button class="btn-trade btn-sell" onclick="trade('SELL')">
-          <span>SELL (+10x BOOST)</span>
+          <span>SELL (+10x)</span>
           <span class="btn-sub" id="sell-bid-btn">Bid $0.00</span>
         </button>
       </div>
 
-      <button class="reset-btn" onclick="resetAccount()">Reset Paper Account ($250k)</button>
+      <button class="reset-btn" onclick="resetAccount()">Reset Balance ($250k)</button>
     </div>
   </div>
 </div>
 
 <script>
-const initial = {
+const initialMarkets = {
  "BTC/USD": { name: "Bitcoin / US Dollar", price: 68500.00, volatility: 220.00 },
  "NVDA":    { name: "NVIDIA Corp", price: 300.00, volatility: 45.00 },
  "SPX":     { name: "S&P 500 Index", price: 5600.00, volatility: 80.00 },
@@ -271,37 +290,124 @@ const initial = {
  "ETH/USD": { name: "Ethereum / US Dollar", price: 3500.00, volatility: 65.00 }
 };
 
-let saved = localStorage.getItem("paperTradeV4");
-let state = saved ? JSON.parse(saved) : { cash: 250000, positions: {}, history: [], prices: {} };
+let currentUser = "";
+let state = { cash: 250000, positions: {}, history: {}, prices: {} };
 let selected = "BTC/USD", candles = {};
-
-for (const s in initial) {
-  if (!state.prices[s]) state.prices[s] = initial[s].price;
-  candles[s] = [];
-}
+let chatChannel = new BroadcastChannel('tjr_global_chat');
 
 function money(n) { return "$" + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function save() { localStorage.setItem("paperTradeV4", JSON.stringify(state)); }
+
+// LOGIN & USER SAVE SYSTEM
+function login() {
+  let val = document.getElementById("username-input").value.trim();
+  if (!val) return alert("Please enter a username.");
+  currentUser = val;
+  document.getElementById("display-user").textContent = currentUser;
+  document.getElementById("auth-modal").style.display = "none";
+  loadUserData();
+}
+
+function logout() {
+  saveUserData();
+  document.getElementById("auth-modal").style.display = "flex";
+}
+
+function loadUserData() {
+  let saved = localStorage.getItem("tjr_user_" + currentUser);
+  if (saved) {
+    state = JSON.parse(saved);
+  } else {
+    state = { cash: 250000, positions: {}, history: [], prices: {} };
+  }
+  
+  for (const s in initialMarkets) {
+    if (!state.prices[s]) state.prices[s] = initialMarkets[s].price;
+    candles[s] = [];
+  }
+  seedCandles();
+  renderAll();
+}
+
+function saveUserData() {
+  if (currentUser) {
+    localStorage.setItem("tjr_user_" + currentUser, JSON.stringify(state));
+  }
+}
 
 function seedCandles() {
-  for (const s in initial) {
+  for (const s in initialMarkets) {
     let current = state.prices[s];
-    let vol = initial[s].volatility;
+    let vol = initialMarkets[s].volatility;
     candles[s] = [];
     for (let i = 0; i < 45; i++) {
       let open = current + (Math.random() - 0.5) * vol;
       let close = open + (Math.random() - 0.49) * (vol * 1.5);
       let high = Math.max(open, close) + Math.random() * vol;
       let low = Math.min(open, close) - Math.random() * vol;
-      let volume = Math.floor(Math.random() * 8000) + 1200;
-      candles[s].push({ open, high, low, close, vol: volume });
+      candles[s].push({ open, high, low, close });
       current = close;
     }
     state.prices[s] = current;
   }
 }
-seedCandles();
 
+// GLOBAL CHAT SYSTEM
+function sendChat() {
+  let input = document.getElementById("chat-input");
+  let text = input.value.trim();
+  if (!text) return;
+
+  let msg = {
+    user: currentUser || "Guest",
+    text: text,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  renderChatMessage(msg);
+  saveChatMessage(msg);
+  chatChannel.postMessage(msg);
+  input.value = "";
+}
+
+chatChannel.onmessage = (event) => {
+  renderChatMessage(event.data);
+};
+
+function renderChatMessage(msg) {
+  let container = document.getElementById("chat-messages");
+  let div = document.createElement("div");
+  div.className = "msg-item";
+  div.innerHTML = `
+    <div class="msg-header">
+      <span class="msg-user">${msg.user}</span>
+      <span class="msg-time">${msg.time}</span>
+    </div>
+    <div class="msg-body">${msg.text}</div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function saveChatMessage(msg) {
+  let chats = JSON.parse(localStorage.getItem("tjr_global_chat_history") || "[]");
+  chats.push(msg);
+  if (chats.length > 50) chats.shift();
+  localStorage.setItem("tjr_global_chat_history", JSON.stringify(chats));
+}
+
+function loadChatHistory() {
+  let chats = JSON.parse(localStorage.getItem("tjr_global_chat_history") || "[]");
+  document.getElementById("chat-messages").innerHTML = "";
+  if(chats.length === 0) {
+    chats = [
+      { user: "TJR_Desk", text: "Welcome to the institutional trading floor.", time: "10:00 AM" },
+      { user: "TradeMaster99", text: "BTC breaking higher here!", time: "10:01 AM" }
+    ];
+  }
+  chats.forEach(renderChatMessage);
+}
+
+// RENDER & TRADING FUNCTIONS
 function portfolioValue() {
   let v = state.cash;
   for (const s in state.positions) v += state.positions[s].qty * state.prices[s];
@@ -310,16 +416,16 @@ function portfolioValue() {
 
 function renderStocks() {
   let h = "";
-  for (const s in initial) {
+  for (const s in initialMarkets) {
     let p = state.prices[s], c = candles[s], prev = c.length > 1 ? c[c.length - 2].close : p;
     let pct = ((p - prev) / prev) * 100;
     h += `<div class="watchlist-item ${s === selected ? 'active' : ''}" onclick="selectStock('${s}')">
       <div>
         <span class="sym-code">${s}</span>
-        <span class="sym-name">${initial[s].name}</span>
+        <span class="sym-name">${initialMarkets[s].name}</span>
       </div>
       <div style="text-align:right">
-        <div style="font-family: 'Consolas', monospace; font-weight:700;">${money(p)}</div>
+        <div style="font-family: 'Consolas', monospace; font-weight:800;">${money(p)}</div>
         <div style="font-size:9px; font-weight:700;" class="${pct >= 0 ? 'txt-green' : 'txt-red'}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</div>
       </div>
     </div>`;
@@ -328,7 +434,7 @@ function renderStocks() {
 }
 
 function renderStats() {
-  let total = portfolioValue(), pnl = total - 250000;
+  let total = portfolioValue();
   let unreleasedPNL = 0;
   for (const s in state.positions) {
     let pos = state.positions[s];
@@ -337,10 +443,6 @@ function renderStats() {
 
   document.getElementById("cash").textContent = money(state.cash);
   document.getElementById("total").textContent = money(total);
-  
-  let el = document.getElementById("pnl");
-  el.textContent = (pnl >= 0 ? "+" : "") + money(pnl);
-  el.className = "stat-val " + (pnl >= 0 ? "txt-green" : "txt-red");
 
   let dayEl = document.getElementById("daypnl");
   dayEl.textContent = (unreleasedPNL >= 0 ? "+" : "") + money(unreleasedPNL);
@@ -352,12 +454,12 @@ function renderPortfolio() {
   for (const s in state.positions) {
     let x = state.positions[s], p = state.prices[s], v = x.qty * p, pl = v - (x.qty * x.avg);
     h += `<tr>
-      <td style="font-weight:700; color:#fff;">${s}</td>
+      <td style="font-weight:800; color:#fff;">${s}</td>
       <td>${x.qty}</td>
       <td>${money(x.avg)}</td>
       <td>${money(p)}</td>
       <td>${money(v)}</td>
-      <td class="${pl >= 0 ? 'txt-green' : 'txt-red'}" style="font-weight:700;">${pl >= 0 ? '+' : ''}${money(pl)}</td>
+      <td class="${pl >= 0 ? 'txt-green' : 'txt-red'}" style="font-weight:800;">${pl >= 0 ? '+' : ''}${money(pl)}</td>
     </tr>`;
   }
   document.getElementById("portfolio").innerHTML = h || `<tr><td colspan="6" style="text-align:center; color: var(--text-secondary); padding:16px;">No active open positions.</td></tr>`;
@@ -365,41 +467,17 @@ function renderPortfolio() {
 
 function renderHistory() {
   let h = "";
-  state.history.slice().reverse().forEach(t => {
+  (state.history || []).slice().reverse().forEach(t => {
     h += `<tr>
       <td>${t.time}</td>
-      <td class="${t.side === 'BUY' ? 'txt-green' : 'txt-red'}" style="font-weight:700;">${t.side}</td>
-      <td style="font-weight:700; color:#fff;">${t.symbol}</td>
+      <td class="${t.side.includes('BUY') ? 'txt-green' : 'txt-red'}" style="font-weight:800;">${t.side}</td>
+      <td style="font-weight:800; color:#fff;">${t.symbol}</td>
       <td>${t.qty}</td>
       <td>${money(t.price)}</td>
       <td>${money(t.qty * t.price)}</td>
     </tr>`;
   });
-  document.getElementById("history").innerHTML = h || `<tr><td colspan="6" style="text-align:center; color: var(--text-secondary); padding:16px;">No order execution log found.</td></tr>`;
-}
-
-function renderLevel2() {
-  let p = state.prices[selected];
-  let vol = initial[selected].volatility;
-  let spread = (vol * 0.15);
-  let asks = "", bids = "";
-
-  for (let i = 5; i >= 1; i--) {
-    let askP = p + (i * spread);
-    let askS = Math.floor(Math.random() * 90) + 10;
-    asks += `<div class="ob-row"><div class="ob-bg" style="width:${askS}%"></div><span class="txt-red">${askP.toFixed(2)}</span><span>${askS}</span></div>`;
-  }
-  for (let i = 1; i <= 5; i++) {
-    let bidP = p - (i * spread);
-    let bidS = Math.floor(Math.random() * 90) + 10;
-    bids += `<div class="ob-row"><div class="ob-bg" style="width:${bidS}%"></div><span class="txt-green">${bidP.toFixed(2)}</span><span>${bidS}</span></div>`;
-  }
-
-  document.getElementById("ob-asks").innerHTML = asks;
-  document.getElementById("ob-bids").innerHTML = bids;
-  document.getElementById("ob-spread").textContent = `Spread: $${spread.toFixed(2)}`;
-  document.getElementById("buy-ask-btn").textContent = `Ask $${(p + spread).toFixed(2)}`;
-  document.getElementById("sell-bid-btn").textContent = `Bid $${((p - spread) * 10).toFixed(2)} (+10x)`;
+  document.getElementById("history").innerHTML = h || `<tr><td colspan="6" style="text-align:center; color: var(--text-secondary); padding:16px;">No executions logged yet.</td></tr>`;
 }
 
 function drawChart() {
@@ -412,11 +490,9 @@ function drawChart() {
 
   let min = Math.min(...data.map(d => d.low));
   let max = Math.max(...data.map(d => d.high));
-  let maxVol = Math.max(...data.map(d => d.vol));
-  let pad = 16, barW = (w - 50) / data.length;
+  let pad = 20, barW = (w - 40) / data.length;
 
-  ctx.strokeStyle = "#1e222d";
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#131722";
   for (let i = 1; i < 6; i++) {
     let y = (h / 6) * i;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
@@ -438,49 +514,41 @@ function drawChart() {
 
     ctx.fillStyle = color;
     ctx.fillRect(x + 1, Math.min(openY, closeY), Math.max(barW - 2, 2), Math.max(Math.abs(openY - closeY), 2));
-
-    let volH = (d.vol / maxVol) * (h * 0.18);
-    ctx.fillStyle = isUp ? "rgba(8, 153, 129, 0.25)" : "rgba(242, 54, 69, 0.25)";
-    ctx.fillRect(x + 1, h - volH, Math.max(barW - 2, 1), volH);
   });
 
   document.getElementById("sym").textContent = selected;
-  document.getElementById("name").textContent = initial[selected].name;
+  document.getElementById("name").textContent = initialMarkets[selected].name;
   let curP = state.prices[selected];
   document.getElementById("current").textContent = money(curP);
-
-  let prev = data.length > 1 ? data[data.length - 2].close : curP;
-  let pct = ((curP - prev) / prev) * 100;
-  let ce = document.getElementById("currentchg");
-  ce.textContent = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
-  ce.className = pct >= 0 ? "txt-green" : "txt-red";
 
   let q = Number(document.getElementById("qty").value || 0);
   document.getElementById("estimate").textContent = money(q * curP);
   document.getElementById("sell-estimate").textContent = money(q * (curP * 10));
+  document.getElementById("buy-ask-btn").textContent = `Ask ${money(curP)}`;
+  document.getElementById("sell-bid-btn").textContent = `Bid ${money(curP * 10)}`;
 }
 
 function selectStock(s) { selected = s; renderAll(); }
 
 function trade(side) {
   let q = Math.floor(Number(document.getElementById("qty").value));
-  if (!q || q < 1) return alert("Please enter a valid share amount.");
+  if (!q || q < 1) return alert("Please enter a valid lot size.");
   let p = state.prices[selected];
 
   if (side === "BUY") {
     let cost = q * p;
-    if (cost > state.cash) return alert("Insufficient buying power.");
+    if (cost > state.cash) return alert("Insufficient account funds.");
     state.cash -= cost;
     let x = state.positions[selected] || { qty: 0, avg: 0 };
     x.avg = (x.qty * x.avg + cost) / (x.qty + q);
     x.qty += q;
     state.positions[selected] = x;
-    state.history.push({ time: new Date().toLocaleTimeString(), side, symbol: selected, qty: q, price: p });
+    state.history.push({ time: new Date().toLocaleTimeString(), side: "BUY", symbol: selected, qty: q, price: p });
   } else {
     let x = state.positions[selected];
-    if (!x || x.qty < q) return alert("Position size smaller than sell quantity.");
+    if (!x || x.qty < q) return alert("Position size smaller than sell order.");
     
-    // 10X SELL MULTIPLIER (CONVERTS $30 PAYOUTS INTO $300+ PER SHARE)
+    // 10X SELL BOOST (Turns $30 payout into $300+)
     let sellPrice = p * 10;
     let payout = q * sellPrice;
     
@@ -490,7 +558,7 @@ function trade(side) {
     state.history.push({ time: new Date().toLocaleTimeString(), side: "SELL (+10x)", symbol: selected, qty: q, price: sellPrice });
   }
 
-  save();
+  saveUserData();
   renderAll();
 }
 
@@ -509,9 +577,12 @@ function switchTab(tab) {
 }
 
 function resetAccount() {
-  if (confirm("Reset paper account balance to $250,000.00?")) {
-    localStorage.removeItem("paperTradeV4");
-    location.reload();
+  if (confirm(`Reset balance and positions for user ${currentUser}?`)) {
+    state.cash = 250000;
+    state.positions = {};
+    state.history = [];
+    saveUserData();
+    renderAll();
   }
 }
 
@@ -520,37 +591,38 @@ function renderAll() {
   renderStats();
   renderPortfolio();
   renderHistory();
-  renderLevel2();
   drawChart();
 }
 
 document.getElementById("qty").addEventListener("input", drawChart);
 window.addEventListener("resize", drawChart);
 
+// LIVE MARKET TICKER
 setInterval(() => {
-  for (const s in initial) {
+  for (const s in initialMarkets) {
     let p = state.prices[s];
-    let vol = initial[s].volatility;
+    let vol = initialMarkets[s].volatility;
     let tickChange = (Math.random() - 0.495) * vol;
     p = Math.max(10.00, p + tickChange);
     state.prices[s] = p;
 
     let c = candles[s][candles[s].length - 1];
-    c.close = p;
-    c.high = Math.max(c.high, p);
-    c.low = Math.min(c.low, p);
-    c.vol += Math.floor(Math.random() * 80);
+    if (c) {
+      c.close = p;
+      c.high = Math.max(c.high, p);
+      c.low = Math.min(c.low, p);
+    }
 
     if (Math.random() > 0.88) {
-      candles[s].push({ open: p, high: p, low: p, close: p, vol: 100 });
+      candles[s].push({ open: p, high: p, low: p, close: p });
       if (candles[s].length > 45) candles[s].shift();
     }
   }
-  save();
+  if (currentUser) saveUserData();
   renderAll();
 }, 400);
 
-renderAll();
+loadChatHistory();
 </script>
 </body>
 </html>
